@@ -720,9 +720,21 @@ def copyDir(source, destination) {
     Path sourceDir = new File(source).toPath().toAbsolutePath().normalize()
     Path destinationDir = new File(destination).toPath().toAbsolutePath().normalize()
 
+    // VCS directories to exclude (matches Ant's defaultexcludes)
+    def vcsDirectories = ['.git', '.svn', '.hg', 'CVS', '.bzr', '_darcs', '.arch-ids',
+                          '.arch-inventory', '{arch}', 'SCCS', 'BitKeeper'] as Set
+
+    // VCS files to exclude (matches Ant's defaultexcludes)
+    def vcsFiles = ['.gitignore', '.gitattributes', '.gitmodules', '.hgignore', '.hgsub',
+                    '.hgsubstate', '.hgtags', '.cvsignore'] as Set
+
     Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
         @Override
         FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+            // Skip VCS directories (matches Ant's defaultexcludes)
+            if (vcsDirectories.contains(dir.fileName?.toString())) {
+                return FileVisitResult.SKIP_SUBTREE
+            }
             if (dir.startsWith(destinationDir)) {
                 return FileVisitResult.SKIP_SUBTREE
             }
@@ -738,6 +750,10 @@ def copyDir(source, destination) {
 
         @Override
         FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            // Skip VCS files (matches Ant's defaultexcludes)
+            if (vcsFiles.contains(file.fileName?.toString())) {
+                return FileVisitResult.CONTINUE
+            }
             Path targetFile = destinationDir.resolve(sourceDir.relativize(file))
             if (targetFile.startsWith(sourceDir)) {
                 return FileVisitResult.CONTINUE
